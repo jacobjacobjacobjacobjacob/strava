@@ -1,11 +1,13 @@
 # api/api.py
 import requests
+import logging
 from assets.config import setup_logging
 from api.auth import get_strava_tokens
 from assets.utils import save_to_csv
 
 
 setup_logging()
+logger = logging.getLogger(__name__)
 
 
 def get_strava_activities():
@@ -20,6 +22,7 @@ def get_strava_activities():
     try:
         response = requests.get(activities_url, headers=headers, params=params)
         response.raise_for_status()  # Raise exception for non-200 status codes
+        logger.info("API call successful.")
         return response.json()
     except requests.exceptions.RequestException as e:
         logger.error("Error occurred while fetching activities: %s", e)

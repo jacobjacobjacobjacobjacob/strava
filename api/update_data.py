@@ -4,7 +4,6 @@ import pandas as pd
 import logging
 from assets.config import setup_logging
 from api.api import get_strava_activities
-from assets.utils import save_to_csv
 
 """
 Fetches new data from the API and writes it to a CSV-file. 
@@ -28,6 +27,6 @@ def fetch_strava_data() -> None:
     df = pd.DataFrame(strava_data)
 
     if not df.empty:
-        save_to_csv(df, "raw_data")
+        df.to_csv("data/raw_data.csv")
     else:
         logger.warning("No data retrieved. DataFrame is empty.")

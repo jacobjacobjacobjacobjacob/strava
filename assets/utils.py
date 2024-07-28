@@ -12,7 +12,7 @@ def save_to_csv(df: pd.DataFrame, file_name: str) -> None:
     """
     try:
         base_dir = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "strava", "data")
+            os.path.join(os.path.dirname(__file__), "..", "strava", "data")
         )
 
         if not os.path.exists(base_dir):
@@ -46,6 +46,21 @@ def create_dataframe(csv_file: str) -> pd.DataFrame:
     except FileNotFoundError:
         print(f"Error: CSV file '{csv_file}' not found.")
         return None
+
+
+def convert_date_to_yyyymmdd(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert 'date' column to format YYYY-MM-DD.
+
+    :param
+        df (pd.DataFrame): DataFrame with a 'date' column.
+
+    :return
+        pd.DataFrame: DataFrame with 'date' column converted to YYYY-MM-DD format.
+    """
+
+    df["date"] = df["date"].dt.date
+    return df
 
 
 def m_to_km(m: float) -> float:

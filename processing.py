@@ -3,7 +3,13 @@ import pandas as pd
 import logging
 import os
 
-from assets.utils import m_to_km, ms_to_kph, sec_to_h, create_dataframe
+from assets.utils import (
+    m_to_km,
+    ms_to_kph,
+    sec_to_h,
+    create_dataframe,
+    convert_date_to_yyyymmdd,
+)
 from assets.config import gear, local_tz, setup_logging
 from validation import validate_data
 
@@ -40,8 +46,6 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     # Convert all string values in all rows to lowercase
     for column in df.select_dtypes(include=["object"]).columns:
         df[column] = df[column].apply(lambda x: x.lower() if isinstance(x, str) else x)
-
-    return df
 
     return df
 
@@ -277,6 +281,21 @@ def add_suffer_score_buckets(df):
     return df
 
 
+def remove_short_rides(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove rides under 10 km from the DataFrame.
+
+    :param
+        df (pd.DataFrame): The DataFrame containing Strava data.
+
+    :returns
+        pd.DataFrame: DataFrame with short rides removed.
+    """
+
+    df = df.drop(df[(df["sport_type"] == "outdoor") & (df["distance"] < 10)].index)
+    return df
+
+
 def clean_data(df):
     try:
         clean_df = (
@@ -291,6 +310,8 @@ def clean_data(df):
             .pipe(map_ride_type, gear)
             .pipe(replace_nan_values)
             .pipe(filter_columns)
+            .pipe(remove_short_rides)
+            .pipe(convert_date_to_yyyymmdd)
             .pipe(sort_and_reset_index)
         )
 

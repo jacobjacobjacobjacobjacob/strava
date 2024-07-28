@@ -23,7 +23,7 @@ def main(csv_file="data/raw_data.csv") -> pd.DataFrame:
     - full_df (DataFrame): Processed and validated dataset.
     """
 
-    csv_file = os.path.join(os.path.dirname(__file__), "..", "data", "raw_data.csv")
+    csv_file = "data/raw_data.csv"
     raw_data = create_dataframe(csv_file)
     clean_df = clean_data(raw_data)
 
@@ -44,5 +44,4 @@ if __name__ == "__main__":
     fetch_strava_data()
 
     df = main()
-    # pd.options.display.max_columns = 999
-    # print(df.tail())
+    print(df.tail())

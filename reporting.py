@@ -1,5 +1,8 @@
 # reporting.py
 import pandas as pd
+from main import main
+
+df = main()
 
 
 def filter_sport_data(df: pd.DataFrame, sport_type: str = None, ride_type: str = None):
