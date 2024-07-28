@@ -8,7 +8,6 @@ raw_data.csv
 clean_data.csv
 clean_indoor_data.csv
 clean_outdoor_data.csv
-test.csv
 
 # Ignore all CSV files
 *.csv
