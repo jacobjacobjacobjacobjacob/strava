@@ -1,12 +1,15 @@
 # processing.py
 import pandas as pd
-
-# import pytz
+import logging
 import os
 
 from assets.utils import m_to_km, ms_to_kph, sec_to_h, create_dataframe
-from assets.config import gear, local_tz
+from assets.config import gear, local_tz, setup_logging
 from validation import validate_data
+
+setup_logging()
+logger = logging.getLogger(__name__)
+
 
 """
 Processing Strava data to extract clean and relevant information:
@@ -26,17 +29,19 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     :return: DataFrame with renamed columns.
     :rtype: pd.DataFrame
     """
-    rename_dict = {
+    rename_mapping = {
         "gear_id": "ride_type",
         "start_date": "date",
         "moving_time": "duration",
         "total_elevation_gain": "elevation_gain",
     }
-    df.rename(columns=rename_dict, inplace=True)
+    df.rename(columns=rename_mapping, inplace=True)
 
-    # Convert all strings in all rows to lowercase
+    # Convert all string values in all rows to lowercase
     for column in df.select_dtypes(include=["object"]).columns:
-        df[column] = df[column].str.lower()
+        df[column] = df[column].apply(lambda x: x.lower() if isinstance(x, str) else x)
+
+    return df
 
     return df
 
@@ -123,7 +128,7 @@ def filter_columns(cleaned_df: pd.DataFrame) -> pd.DataFrame:
         "max_heartrate",
         "suffer_score",
         "suffer_score_bucket",
-        "elevation_ratio",
+        "elevation_rate",
         "sport_type",
     ]
     df = cleaned_df[columns].copy()
@@ -172,13 +177,20 @@ def add_time_columns(df: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: DataFrame with "start_time" and "end_time" columns added.
     """
 
+    # Check if date column is timezone-aware
     if df["date"].dt.tz is None:
+        # Localize to UTC
         df["date"] = df["date"].dt.tz_localize("UTC")
+
+    # Convert to local timezone
     df["date"] = df["date"].dt.tz_convert(local_tz)
-    df["date"] = df["date"].dt.date
+
+    # Calculate end_time based on duration
     df["end_time"] = df["date"] + pd.to_timedelta(df["duration"], unit="h")
+
     df["start_time"] = df["date"].dt.strftime("%H:%M")
     df["end_time"] = df["end_time"].dt.strftime("%H:%M")
+
     return df
 
 
