@@ -21,27 +21,22 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     Rename columns for readability and clarity.
 
-    :param
-        df (pd.DataFrame): The DataFrame containing Strava data.
-
-    :returns
-        pd.DataFrame: DataFrame with renamed columns.
+    :param df: The DataFrame containing Strava data.
+    :type df: pd.DataFrame
+    :return: DataFrame with renamed columns.
+    :rtype: pd.DataFrame
     """
-
-    if "gear_id" in df.columns:
-        df.rename(columns={"gear_id": "ride_type"}, inplace=True)
-    if "start_date" in df.columns:
-        df.rename(columns={"start_date": "date"}, inplace=True)
-    if "moving_time" in df.columns:
-        df.rename(columns={"moving_time": "duration"}, inplace=True)
-    if "total_elevation_gain" in df.columns:
-        df.rename(columns={"total_elevation_gain": "elevation_gain"}, inplace=True)
+    rename_dict = {
+        "gear_id": "ride_type",
+        "start_date": "date",
+        "moving_time": "duration",
+        "total_elevation_gain": "elevation_gain",
+    }
+    df.rename(columns=rename_dict, inplace=True)
 
     # Convert all strings in all rows to lowercase
     for column in df.select_dtypes(include=["object"]).columns:
-        # Ensure the column contains string values
-        if df[column].apply(lambda x: isinstance(x, str)).all():
-            df[column] = df[column].str.lower()
+        df[column] = df[column].str.lower()
 
     return df
 
@@ -56,27 +51,22 @@ def filter_by_period(
     """
     Filter DataFrame by time parameters.
 
-    :param
-        df (pd.DataFrame): The DataFrame containing Strava data.
-        start_date (str, optional): Start date in 'YYYY-MM-DD' format.
-        end_date (str, optional): End date in 'YYYY-MM-DD' format.
-        year (int, optional): Year to filter by.
-        month (int, optional): Month to filter by.
-
-    :returns
-        pd.DataFrame: DataFrame filtered by given period.
+    :param df: The DataFrame containing Strava data.
+    :param start_date: Start date in 'YYYY-MM-DD' format.
+    :param end_date: End date in 'YYYY-MM-DD' format.
+    :param year: Year to filter by.
+    :param month: Month to filter by.
+    :return: DataFrame filtered by given period.
+    :rtype: pd.DataFrame
     """
-
-    # Sort by date
     df = df.sort_values(by="date", ascending=True)
-
-    if start_date is not None:
+    if start_date:
         df = df[df["date"] >= start_date]
-    if end_date is not None:
+    if end_date:
         df = df[df["date"] <= end_date]
-    if year is not None:
+    if year:
         df = df[df["date"].dt.year == year]
-    if month is not None:
+    if month:
         df = df[df["date"].dt.month == month]
     return df
 
@@ -112,50 +102,44 @@ def filter_columns(cleaned_df: pd.DataFrame) -> pd.DataFrame:
     """
     Filter the DataFrame to only keep the specified columns.
 
-    :param
-        cleaned_df (pd.DataFrame): The DataFrame containing cleaned Strava data.
-
-    :returns
-        pd.DataFrame: Filtered DataFrame with desired columns.
+    :param cleaned_df: The DataFrame containing cleaned Strava data.
+    :type cleaned_df: pd.DataFrame
+    :return: Filtered DataFrame with desired columns.
+    :rtype: pd.DataFrame
     """
-
-    columns = {
-        "all": [
-            "id",
-            "date",
-            "month",
-            "day_of_week",
-            "start_time",
-            "end_time",
-            "duration",
-            "distance",
-            "elevation_gain",
-            "average_speed",
-            "max_speed",
-            "average_heartrate",
-            "max_heartrate",
-            "suffer_score",
-            "suffer_score_bucket",
-            "elevation_ratio",
-            "sport_type",
-        ],
-    }
-
-    df = cleaned_df[columns["all"]].copy()
-
+    columns = [
+        "id",
+        "date",
+        "month",
+        "day_of_week",
+        "start_time",
+        "end_time",
+        "duration",
+        "distance",
+        "elevation_gain",
+        "average_speed",
+        "max_speed",
+        "average_heartrate",
+        "max_heartrate",
+        "suffer_score",
+        "suffer_score_bucket",
+        "elevation_ratio",
+        "sport_type",
+    ]
+    df = cleaned_df[columns].copy()
     return df
 
 
 def add_month_column(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Add "month"-column to the DataFrame.
+    Add "month" column to the DataFrame.
 
-    :param
-        df (pd.DataFrame): The DataFrame containing Strava data.
-
-    :returns
-        pd.DataFrame: DataFrame with "month"-column added.
+    :param df: The DataFrame containing Strava data.
+    :type df: pd.DataFrame
+    :return: DataFrame with "month" column added.
+    :rtype: pd.DataFrame
     """
+
     df["month"] = df["date"].dt.month_name().str.slice(stop=3).str.lower()
     return df
 
@@ -170,6 +154,7 @@ def add_day_of_week(df: pd.DataFrame) -> pd.DataFrame:
     :returns
         pd.DataFrame: DataFrame with "day_of_week"-column added.
     """
+
     weekdays = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
     df["day_of_week"] = df["date"].dt.weekday.map(lambda x: weekdays[x])
     return df
@@ -187,23 +172,13 @@ def add_time_columns(df: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: DataFrame with "start_time" and "end_time" columns added.
     """
 
-    # Check if date column is timezone-aware
     if df["date"].dt.tz is None:
-        # Localize to UTC
         df["date"] = df["date"].dt.tz_localize("UTC")
-
-    # Convert to local timezone
     df["date"] = df["date"].dt.tz_convert(local_tz)
-
-    # Reformat the date to YYYY-MM-DD
     df["date"] = df["date"].dt.date
-
-    # Calculate end_time based on duration
     df["end_time"] = df["date"] + pd.to_timedelta(df["duration"], unit="h")
-
     df["start_time"] = df["date"].dt.strftime("%H:%M")
     df["end_time"] = df["end_time"].dt.strftime("%H:%M")
-
     return df
 
 
@@ -288,3 +263,29 @@ def add_suffer_score_buckets(df):
     labels = ["very low", "low", "medium", "high", "very high"]
     df["suffer_score_bucket"] = pd.qcut(df["suffer_score"], q=5, labels=labels)
     return df
+
+
+def clean_df(df):
+    try:
+        cleaned_df = (
+            df.pipe(rename_columns)
+            .pipe(convert_units)
+            .pipe(filter_by_period, year=2024)
+            .pipe(add_month_column)
+            .pipe(add_day_of_week)
+            .pipe(add_time_columns)
+            .pipe(add_elevation_rate)
+            .pipe(add_suffer_score_buckets)
+            .pipe(map_ride_type, gear)
+            .pipe(replace_nan_values)
+            .pipe(filter_columns)
+            .pipe(sort_and_reset_index)
+        )
+
+        logger.info("DataFrame cleaning process completed successfully.")
+
+    except Exception as e:
+        logger.error(f"Error during DataFrame cleaning: {e}")
+        raise
+
+    return cleaned_df
