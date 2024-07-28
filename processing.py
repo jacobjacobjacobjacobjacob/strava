@@ -265,9 +265,9 @@ def add_suffer_score_buckets(df):
     return df
 
 
-def clean_df(df):
+def process_data(df):
     try:
-        cleaned_df = (
+        processed_df = (
             df.pipe(rename_columns)
             .pipe(convert_units)
             .pipe(filter_by_period, year=2024)
@@ -288,4 +288,4 @@ def clean_df(df):
         logger.error(f"Error during DataFrame cleaning: {e}")
         raise
 
-    return cleaned_df
+    return processed_df
