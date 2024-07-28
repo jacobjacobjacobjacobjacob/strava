@@ -1,6 +1,8 @@
 # main.py
 import pandas as pd
 import os
+
+from api.update_data import fetch_strava_data
 from assets.utils import create_dataframe, save_to_csv
 from processing import clean_data
 from validation import validate_data
@@ -39,6 +41,8 @@ def main(csv_file="data/raw_data.csv") -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    fetch_strava_data()
+
     df = main()
-    pd.options.display.max_columns = 999
-    print(df.tail())
+    # pd.options.display.max_columns = 999
+    # print(df.tail())

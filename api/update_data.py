@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import logging
 from assets.config import setup_logging
-from api import get_strava_activities
+from api.api import get_strava_activities
 from assets.utils import save_to_csv
 
 """

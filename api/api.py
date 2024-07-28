@@ -1,7 +1,7 @@
 # api/api.py
 import requests
 from assets.config import setup_logging
-from auth import get_strava_tokens
+from api.auth import get_strava_tokens
 from assets.utils import save_to_csv
 
 
