@@ -1,4 +1,4 @@
-# strava/api.py
+# api/api.py
 import requests
 from assets.config import setup_logging
 from auth import get_strava_tokens
