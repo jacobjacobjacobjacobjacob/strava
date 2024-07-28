@@ -12,7 +12,7 @@ def save_to_csv(df: pd.DataFrame, file_name: str) -> None:
     """
     try:
         base_dir = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "strava", "data")
+            os.path.join(os.path.dirname(__file__), "..", "data")
         )
 
         if not os.path.exists(base_dir):
