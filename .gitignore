@@ -1,0 +1,26 @@
+# Ignore .env file
+.env
+
+.venv
+
+# Ignore CSV files
+raw_data.csv
+clean_data.csv
+clean_indoor_data.csv
+clean_outdoor_data.csv
+test.csv
+
+# Ignore all CSV files
+*.csv
+
+# Ignore Python bytecode files
+__pycache__/
+
+# Ignore IDE specific files (e.g., PyCharm)
+.idea/
+
+# Ignore macOS specific files
+*.DS_Store
+
+# Ignore Jupyter notebook checkpoints
+notebooks/.ipynb_checkpoints/
