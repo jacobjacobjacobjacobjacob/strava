@@ -1,11 +1,16 @@
 # main.py
 import pandas as pd
 import os
+import logging
 
 from api.update_data import fetch_strava_data
 from assets.utils import create_dataframe, save_to_csv
 from processing import clean_data
 from validation import validate_data
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def main(csv_file="data/raw_data.csv") -> pd.DataFrame:
@@ -22,25 +27,42 @@ def main(csv_file="data/raw_data.csv") -> pd.DataFrame:
     :return:
     - full_df (DataFrame): Processed and validated dataset.
     """
+    try:
+        # Create DataFrame from CSV file
+        raw_data = create_dataframe(csv_file)
+        if raw_data.empty:
+            logger.warning("The raw data is empty.")
+            return None
 
-    raw_data = create_dataframe(csv_file)
-    clean_df = clean_data(raw_data)
+        # Clean the raw data
+        clean_df = clean_data(raw_data)
 
-    # Save clean data to CSV
-    save_to_csv(clean_df, "clean_data")
-    errors = validate_data(clean_df)
+        # Save clean data to CSV
+        save_to_csv(clean_df, "clean_data")
 
-    if errors:
-        print("Validation errors found:")
-        for error in errors:
-            print(error)
+        # Validate the cleaned data
+        errors = validate_data(clean_df)
+
+        if errors:
+            logger.error("Validation errors found:")
+            for error in errors:
+                logger.error(error)
+            return None
+
+        logger.info("Data processing completed successfully.")
+        return clean_df
+
+    except Exception as e:
+        logger.error(f"An error occurred during processing: {e}", exc_info=True)
         return None
-
-    return clean_df
 
 
 if __name__ == "__main__":
+    # Uncomment the next line if you want to fetch data from Strava API
     # fetch_strava_data()
-    pd.options.display.max_columns = 100
+
     df = main()
-    print(df.tail())
+    if df is not None:
+        logger.info("DataFrame successfully processed and saved.")
+    else:
+        logger.error("DataFrame processing failed.")
