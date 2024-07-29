@@ -22,5 +22,5 @@ __pycache__/
 *.DS_Store
 
 # Ignore Jupyter notebook checkpoints
-notebooks/.ipynb_checkpoints/
+.ipynb_checkpoints/
 *.ipynb
