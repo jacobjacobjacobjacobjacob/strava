@@ -254,12 +254,19 @@ def map_sport_types(df: pd.DataFrame, gear_dict) -> pd.DataFrame:
     if "ride_type" in df.columns:
         df["ride_type"] = df["ride_type"].map(gear_dict)
 
-        # Fill NaN-values with "run".
-        df["ride_type"] = df["ride_type"].fillna("run")
-
     df["sport_type"] = df.apply(
         lambda row: (
-            "cycling" if row["ride_type"] in ["indoor", "outdoor"] else "running"
+            "bike"
+            if row["ride_type"] in ["indoor", "outdoor"]
+            else (
+                "run"
+                if row["sport_type"] == "run"
+                else (
+                    "hike"
+                    if row["sport_type"] == "hike"
+                    else "walk" if row["sport_type"] == "walk" else row["sport_type"]
+                )
+            )
         ),
         axis=1,
     )
