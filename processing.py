@@ -134,6 +134,7 @@ def filter_columns(cleaned_df: pd.DataFrame) -> pd.DataFrame:
         "suffer_score_bucket",
         "elevation_rate",
         "sport_type",
+        "ride_type",
     ]
     df = cleaned_df[columns].copy()
     return df
@@ -238,9 +239,10 @@ def sort_and_reset_index(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def map_ride_type(df: pd.DataFrame, gear_dict) -> pd.DataFrame:
+def map_sport_types(df: pd.DataFrame, gear_dict) -> pd.DataFrame:
     """
-    Map ride_type values based on gear dictionary and keep sport_type as "Run" unchanged.
+    - Map ride_type values based on gear dictionary.
+    - Filter sport_type by "cycling" or "running"
 
     :param
         df (pd.DataFrame): The DataFrame containing Strava data.
@@ -249,8 +251,18 @@ def map_ride_type(df: pd.DataFrame, gear_dict) -> pd.DataFrame:
     :returns
         pd.DataFrame: DataFrame with mapped ride types.
     """
-    if "sport_type" in df.columns and "ride_type" in df.columns:
-        df.loc[df["sport_type"] != "run", "sport_type"] = df["ride_type"].map(gear_dict)
+    if "ride_type" in df.columns:
+        df["ride_type"] = df["ride_type"].map(gear_dict)
+
+        # Fill NaN-values with "run".
+        df["ride_type"] = df["ride_type"].fillna("run")
+
+    df["sport_type"] = df.apply(
+        lambda row: (
+            "cycling" if row["ride_type"] in ["indoor", "outdoor"] else "running"
+        ),
+        axis=1,
+    )
 
     return df
 
@@ -291,8 +303,8 @@ def remove_short_rides(df: pd.DataFrame) -> pd.DataFrame:
     :returns
         pd.DataFrame: DataFrame with short rides removed.
     """
-
-    df = df.drop(df[(df["sport_type"] == "outdoor") & (df["distance"] < 10)].index)
+    if "ride_type" in df.columns:
+        df = df.drop(df[(df["sport_type"] == "outdoor") & (df["distance"] < 10)].index)
     return df
 
 
@@ -307,7 +319,7 @@ def clean_data(df):
             .pipe(add_time_columns)
             .pipe(add_elevation_rate)
             .pipe(add_suffer_score_buckets)
-            .pipe(map_ride_type, gear)
+            .pipe(map_sport_types, gear)
             .pipe(replace_nan_values)
             .pipe(filter_columns)
             .pipe(remove_short_rides)
