@@ -100,6 +100,10 @@ def convert_units(df: pd.DataFrame) -> pd.DataFrame:
     if "max_speed" in df.columns:
         df["max_speed"] = df["max_speed"].apply(ms_to_kph)
 
+    return df
+
+
+def convert_datatypes(df) -> pd.DataFrame:
     # Convert to datetime-format.
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"])
@@ -320,6 +324,7 @@ def clean_data(df):
         clean_df = (
             df.pipe(rename_columns)
             .pipe(convert_units)
+            .pipe(convert_datatypes)
             .pipe(filter_by_period, year=2024)
             .pipe(add_month_column)
             .pipe(add_day_of_week)
