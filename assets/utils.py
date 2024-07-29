@@ -100,3 +100,19 @@ def sec_to_h(sec: float) -> float:
         float: Duration in hours.
     """
     return sec / 3600
+
+
+all_months = [
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec",
+]
