@@ -8,7 +8,7 @@ from assets.utils import create_dataframe, save_to_csv
 from processing import clean_data
 from validation import validate_data
 
-# Configure logging
+# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
