@@ -131,3 +131,17 @@ month_mapping = {
     11: "nov",
     12: "dec",
 }
+
+available_streams = [
+    "time",
+    "distance",
+    "latlng",
+    "altitude",
+    "velocity_smooth",
+    "heartrate",
+    "cadence",
+    "watts",
+    "temp",
+    "moving",
+    "grade_smooth",
+]

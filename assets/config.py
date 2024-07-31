@@ -2,6 +2,7 @@
 import pytz
 import logging
 
+
 # Strava gear_id's, representing different types of gear, in this case spinning bike/outdoor road bike.
 gear = {
     "b14008209": "indoor",
