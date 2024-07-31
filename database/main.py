@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-engine = sqlalchemy.create_engine("sqlite:///activities.db")
+engine = sqlalchemy.create_engine("sqlite:///database/activities.db")
 
 
 def write_to_database(df: pd.DataFrame, table_name: str) -> None:
@@ -20,8 +20,17 @@ def write_to_database(df: pd.DataFrame, table_name: str) -> None:
 
     :param df: DataFrame to be written to the database.
     :param table_name: Name of the table in the SQLite database.
+
     """
+    if df.empty:
+        logger.warning("The DataFrame is empty. Nothing to write to the database.")
+        return
+
     try:
+        logger.info(f"Writing DataFrame to table '{table_name}' in the database.")
+        logger.debug(f"DataFrame shape: {df.shape}")
+        logger.debug(f"DataFrame head:\n{df.head()}")
+
         df.to_sql(table_name, con=engine, if_exists="replace", index=False)
         logger.info(
             f"DataFrame successfully written to table '{table_name}' in the database."
