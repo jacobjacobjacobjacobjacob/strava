@@ -25,3 +25,6 @@ __pycache__/
 .notebooks/
 .ipynb_checkpoints/
 *.ipynb
+
+# Database files
+*.db
