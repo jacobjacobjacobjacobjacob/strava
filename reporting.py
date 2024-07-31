@@ -3,7 +3,7 @@ import pandas as pd
 import logging
 
 from main import main
-from assets.utils import all_months
+from assets.utils import all_months, month_mapping
 
 
 # Logging
@@ -93,18 +93,77 @@ def monthly_summary(
         "average_heartrate": mean_ignore_zeros(df_month["average_heartrate"]),
         "max_heartrate": round(float(df_month["max_heartrate"].max()), 2),
         "average_suffer_score": mean_ignore_zeros(df_month["suffer_score"]),
+        "average_elevation_rate": mean_ignore_zeros(df_month["elevation_rate"]),
     }
 
     return summary
+
+
+def cumsum_summary(
+    df: pd.DataFrame, sport_type: str = None, ride_type: str = None
+) -> pd.DataFrame:
+    """
+    Create a DataFrame with cumulative data by month.
+
+    :param df: DataFrame containing Strava data.
+    :param sport_type: "bike" or "run". If None, includes all activities.
+    :param ride_type: "indoor" or "outdoor". Only applicable for cycling. If None, includes all ride types.
+    :return: df: DataFrame with cumulative totals for each month.
+    """
+
+    # Filter by sport type
+    if sport_type:
+        df = df[df["sport_type"] == sport_type]
+
+    # Further filter by ride type if provided
+    if sport_type == "bike" and ride_type:
+        df = df[df["ride_type"] == ride_type]
+
+    columns_to_cumsum = [
+        "distance",
+        "duration",
+        "elevation_gain",
+        "suffer_score",
+    ]
+
+    cumsum_df = df[columns_to_cumsum].cumsum()
+
+    if not all(col in df.columns for col in columns_to_cumsum):
+        raise ValueError("One or more required columns are missing from the DataFrame.")
+
+    # Convert month to datetime for proper sorting
+    df.loc[:, "month"] = pd.to_datetime(df["month"], format="%b").dt.month
+
+    # Group by month and sum
+    monthly_sum_df = df.groupby("month")[columns_to_cumsum].sum().reset_index()
+    monthly_sum_df = monthly_sum_df.sort_values("month")
+
+    # Calculate cumsum
+    cumsum_df = monthly_sum_df.copy()
+    cumsum_df[columns_to_cumsum] = monthly_sum_df[columns_to_cumsum].cumsum()
+    cumsum_df[columns_to_cumsum] = cumsum_df[columns_to_cumsum].round(1)
+
+    # Add column for the number of activities
+    activity_count = df.groupby("month")["id"].count().reset_index(name="activities")
+    activity_count = activity_count.sort_values("month")
+
+    cumsum_df["activities"] = activity_count["activities"].cumsum()
+
+    # Map months to month names
+    cumsum_df["month"] = cumsum_df["month"].map(month_mapping)
+
+    return cumsum_df
+
+
+def yearly_goal(df):
+    pass
 
 
 if __name__ == "__main__":
     df = main()
 
     pd.options.display.max_columns = None
-
-    monthly_summary = monthly_summary(df, sport_type="bike")
-    print(monthly_summary)
+    july = monthly_summary(df, month="jul", sport_type="bike", ride_type="outdoor")
 
     walking_df = filter_sport_data(df, "walk")
     hiking_df = filter_sport_data(df, "hike")
@@ -112,6 +171,13 @@ if __name__ == "__main__":
     bike_df = filter_sport_data(df, "bike")
     indoor_bike_df = filter_sport_data(df, "bike", "indoor")
     outdoor_bike_df = filter_sport_data(df, "bike", "outdoor")
+
+    cumsum_bike = cumsum_summary(df, sport_type="bike")
+    cumsum_run = cumsum_summary(df, sport_type="run")
+    cumsum_indoor = cumsum_summary(df, sport_type="bike", ride_type="indoor")
+
+    print(cumsum_bike)
+    # print(cumsum_run)
 
     # print("Walking Data:\n", walking_df)
     # print("Hiking Data:\n", hiking_df)
