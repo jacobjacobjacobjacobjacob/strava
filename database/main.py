@@ -1,1 +1,32 @@
-# strava/main.py.py
+# database/main.py.py
+import sqlalchemy
+import pandas as pd
+import logging
+import sqlite3
+
+from assets.config import setup_logging
+
+# Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+engine = sqlalchemy.create_engine("sqlite:///activities.db")
+
+
+def write_to_database(df: pd.DataFrame, table_name: str) -> None:
+    """
+    Writes the DataFrame to the specified table in the SQLite database.
+
+    :param df: DataFrame to be written to the database.
+    :param table_name: Name of the table in the SQLite database.
+    """
+    try:
+        df.to_sql(table_name, con=engine, if_exists="replace", index=False)
+        logger.info(
+            f"DataFrame successfully written to table '{table_name}' in the database."
+        )
+    except Exception as e:
+        logger.error(
+            f"An error occurred while writing to the database: {e}", exc_info=True
+        )
