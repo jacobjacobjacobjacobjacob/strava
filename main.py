@@ -27,6 +27,7 @@ def main(csv_file="data/raw_data.csv") -> pd.DataFrame:
     :return:
     - full_df (DataFrame): Processed and validated dataset.
     """
+
     try:
         # Create DataFrame from CSV file
         raw_data = create_dataframe(csv_file)
@@ -59,9 +60,14 @@ def main(csv_file="data/raw_data.csv") -> pd.DataFrame:
 
 if __name__ == "__main__":
     # Uncomment the next line if you want to fetch data from Strava API
-    # fetch_strava_data()
+    fetch_strava_data()
 
     df = main()
+
+    pd.options.display.max_columns = 100
+
+    print(df.tail(1))
+
     if df is not None:
         logger.info("DataFrame successfully processed and saved.")
     else:
