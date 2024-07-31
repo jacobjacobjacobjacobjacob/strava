@@ -7,6 +7,7 @@ from api.update_data import fetch_strava_data
 from assets.utils import create_dataframe, save_to_csv
 from processing import clean_data
 from validation import validate_data
+from database.main import engine, write_to_database
 
 # Logging
 logging.basicConfig(level=logging.INFO)
@@ -67,9 +68,10 @@ if __name__ == "__main__":
     pd.options.display.max_columns = 100
     pd.options.display.max_rows = 100
 
-    print(df.tail(1))
-
     if df is not None:
-        logger.info("DataFrame successfully processed and saved.")
+        write_to_database(df, "activities")
+        logger.info(
+            "DataFrame successfully processed and saved to CSV, and written to database. "
+        )
     else:
         logger.error("DataFrame processing failed.")
