@@ -1,14 +1,8 @@
 # reporting.py
 import pandas as pd
-import logging
 
 from main import main
 from assets.utils import all_months, month_mapping
-
-
-# Logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 def filter_sport_data(
