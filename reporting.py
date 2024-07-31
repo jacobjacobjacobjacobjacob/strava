@@ -41,16 +41,12 @@ def filter_sport_data(
         raise ValueError("Invalid sport type. Choose 'walk', 'hike', 'bike' or 'run'")
 
 
-def monthly_summary(
-    df: pd.DataFrame, month: str = None, sport_type: str = None, ride_type: str = None
-) -> dict:
+def monthly_summary(df: pd.DataFrame, month: str = None) -> dict:
     """
     Generate a summary of activities for the given month.
 
     :param df: DataFrame containing Strava data.
     :param month: month in mmm-format, e.g. "jan" or "nov". If None, include all activities.
-    :param sport_type: "cycling" or "running". If None, includes all activities.
-    :param ride_type: "indoor" or "outdoor". Only applicable for cycling. If None, includes all ride types.
     :return: dict: summary of activities for the given month.
     """
 
@@ -64,14 +60,6 @@ def monthly_summary(
             df_month = df[df["month"] == month]
     else:
         df_month = df
-        logger.info("'month' not provided, all data included.")
-
-    # Apply additional filters for sport_type and ride_type
-    if sport_type:
-        df_month = df_month[df_month["sport_type"] == sport_type]
-
-        if sport_type == "bike" and ride_type:
-            df_month = df_month[df_month["ride_type"] == ride_type]
 
     # Ignore zero values for averages
     def mean_ignore_zeros(series: pd.Series) -> pd.Series:
@@ -99,9 +87,7 @@ def monthly_summary(
     return summary
 
 
-def cumsum_summary(
-    df: pd.DataFrame, sport_type: str = None, ride_type: str = None
-) -> pd.DataFrame:
+def cumsum_summary(df: pd.DataFrame) -> pd.DataFrame:
     """
     Create a DataFrame with cumulative data by month.
 
@@ -110,14 +96,6 @@ def cumsum_summary(
     :param ride_type: "indoor" or "outdoor". Only applicable for cycling. If None, includes all ride types.
     :return: df: DataFrame with cumulative totals for each month.
     """
-
-    # Filter by sport type
-    if sport_type:
-        df = df[df["sport_type"] == sport_type]
-
-    # Further filter by ride type if provided
-    if sport_type == "bike" and ride_type:
-        df = df[df["ride_type"] == ride_type]
 
     columns_to_cumsum = [
         "distance",
@@ -163,7 +141,6 @@ if __name__ == "__main__":
     df = main()
 
     pd.options.display.max_columns = None
-    july = monthly_summary(df, month="jul", sport_type="bike", ride_type="outdoor")
 
     walking_df = filter_sport_data(df, "walk")
     hiking_df = filter_sport_data(df, "hike")
@@ -172,9 +149,12 @@ if __name__ == "__main__":
     indoor_bike_df = filter_sport_data(df, "bike", "indoor")
     outdoor_bike_df = filter_sport_data(df, "bike", "outdoor")
 
-    cumsum_bike = cumsum_summary(df, sport_type="bike")
-    cumsum_run = cumsum_summary(df, sport_type="run")
-    cumsum_indoor = cumsum_summary(df, sport_type="bike", ride_type="indoor")
+    july_summary = monthly_summary(bike_df, month="jul")
+    year_summary = monthly_summary(bike_df)
+    # print(july_summary)
+    # print(year_summary)
+
+    cumsum_bike = cumsum_summary(bike_df)
 
     print(cumsum_bike)
     # print(cumsum_run)
