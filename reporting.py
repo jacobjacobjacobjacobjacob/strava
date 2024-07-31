@@ -2,6 +2,7 @@
 import pandas as pd
 
 from main import main
+from api.streams import get_activity_stream
 from assets.utils import all_months, month_mapping
 
 
@@ -176,7 +177,7 @@ if __name__ == "__main__":
     distance_goal_df = create_yearly_goal_df(
         cumsum_bike, goal_type="distance", goal=2000
     )
-    print(distance_goal_df)
+    print(cumsum_bike)
 
     # print(cumsum_bike)
     # print(cumsum_run)
