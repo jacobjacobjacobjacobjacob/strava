@@ -133,8 +133,31 @@ def cumsum_summary(df: pd.DataFrame) -> pd.DataFrame:
     return cumsum_df
 
 
-def yearly_goal(df):
-    pass
+def create_yearly_goal_df(df: pd.DataFrame, goal_type: str, goal: int) -> pd.DataFrame:
+    """
+    Generate DataFrame for cumulative goal progress including all months.
+
+    :param df: DataFrame containing cumulative data.
+    :param goal_type: str, name of the column (e.g., "distance").
+    :param goal: int, value of the yearly goal (e.g., 2000 km).
+    :return: DataFrame with months, cumulative value for goal_type, and goal values.
+    """
+
+    # Calculate the monthly goal
+    monthly_goal = goal / len(df)
+
+    # Add a goal_distance column with cumulative values
+    df[f"goal_{goal_type}"] = (df.index + 1) * monthly_goal
+
+    # Ensure the DataFrame has all months listed
+    all_months_df = pd.DataFrame({"month": all_months})
+
+    # Merge data
+    merged_df = all_months_df.merge(
+        df[["month", goal_type, f"goal_{goal_type}"]], on="month", how="left"
+    ).fillna(0)
+
+    return merged_df
 
 
 if __name__ == "__main__":
@@ -156,7 +179,12 @@ if __name__ == "__main__":
 
     cumsum_bike = cumsum_summary(bike_df)
 
-    print(cumsum_bike)
+    distance_goal_df = create_yearly_goal_df(
+        cumsum_bike, goal_type="distance", goal=2000
+    )
+    print(distance_goal_df)
+
+    # print(cumsum_bike)
     # print(cumsum_run)
 
     # print("Walking Data:\n", walking_df)
