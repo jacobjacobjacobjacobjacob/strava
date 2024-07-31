@@ -60,7 +60,7 @@ def main(csv_file="data/raw_data.csv") -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    # Uncomment the next line if you want to fetch data from Strava API
+
     # fetch_strava_data()
 
     df = main()
@@ -70,8 +70,5 @@ if __name__ == "__main__":
 
     if df is not None:
         write_to_database(df, "activities")
-        logger.info(
-            "DataFrame successfully processed and saved to CSV, and written to database. "
-        )
     else:
         logger.error("DataFrame processing failed.")
