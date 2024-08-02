@@ -4,6 +4,7 @@ import pandas as pd
 from main import main
 from api.streams import get_activity_stream
 from assets.utils import all_months, month_mapping
+from assets.health_data import resting_hr, max_hr, weight_kg
 
 
 def filter_sport_data(
@@ -36,28 +37,29 @@ def filter_sport_data(
         raise ValueError("Invalid sport type. Choose 'walk', 'hike', 'bike' or 'run'")
 
 
-def monthly_summary(df: pd.DataFrame, month: str = None) -> dict:
+def summary(df: pd.DataFrame, month: str = None, year: int = None) -> pd.DataFrame:
     """
     Generate a summary of activities for the given month.
 
     :param df: DataFrame containing Strava data.
-    :param month: month in mmm-format, e.g. "jan" or "nov". If None, include all activities.
+    :param year: Optional year to filter the data.
+    :param month: Optional month (in abbreviated form, f.ex "jan") to filter the data.
     :return: dict: summary of activities for the given month.
     """
 
-    # Check if the month is valid and filter by month if provided
+    # Filtering
     if month:
         if month.lower() not in all_months:
             raise ValueError(
                 "Invalid month. Please provide month in 'mmm' format, e.g., 'jan' or 'nov'."
             )
-        else:
-            df_month = df[df["month"] == month]
-    else:
-        df_month = df
+
+    # Datetime
+    df["date"] = pd.to_datetime(df["date"])
+    df["year_month"] = df["date"].dt.to_period("M")
 
     # Ignore zero values for averages
-    def mean_ignore_zeros(series: pd.Series) -> pd.Series:
+    def mean_ignore_zeros(series: pd.Series) -> float:
         non_zero_values = series[series > 0]
         return (
             round(float(non_zero_values.mean()), 2)
@@ -65,21 +67,78 @@ def monthly_summary(df: pd.DataFrame, month: str = None) -> dict:
             else 0.0
         )
 
-    # Generate summary statistics
-    summary = {
-        "total_activities": len(df_month),
-        "total_distance_km": round(float(df_month["distance"].sum()), 2),
-        "total_duration_h": round(float(df_month["duration"].sum()), 2),
-        "total_elevation_gain_m": round(float(df_month["elevation_gain"].sum()), 2),
-        "average_speed_kph": mean_ignore_zeros(df_month["average_speed"]),
-        "max_speed_kph": round(float(df_month["max_speed"].max()), 2),
-        "average_heartrate": mean_ignore_zeros(df_month["average_heartrate"]),
-        "max_heartrate": round(float(df_month["max_heartrate"].max()), 2),
-        "average_suffer_score": mean_ignore_zeros(df_month["suffer_score"]),
-        "average_elevation_rate": mean_ignore_zeros(df_month["elevation_rate"]),
-    }
+    # Group by year_month and aggregate
+    summary_df = (
+        df.groupby("year_month")
+        .agg(
+            total_activities=pd.NamedAgg(column="id", aggfunc="count"),
+            total_distance_km=pd.NamedAgg(
+                column="distance", aggfunc=lambda x: round(float(x.sum()), 2)
+            ),
+            total_duration_h=pd.NamedAgg(
+                column="duration", aggfunc=lambda x: round(float(x.sum()), 2)
+            ),
+            total_elevation_gain_m=pd.NamedAgg(
+                column="elevation_gain", aggfunc=lambda x: round(float(x.sum()), 2)
+            ),
+            average_speed_kph=pd.NamedAgg(
+                column="average_speed", aggfunc=mean_ignore_zeros
+            ),
+            max_speed_kph=pd.NamedAgg(
+                column="max_speed", aggfunc=lambda x: round(float(x.max()), 2)
+            ),
+            average_heartrate=pd.NamedAgg(
+                column="average_heartrate", aggfunc=mean_ignore_zeros
+            ),
+            max_heartrate=pd.NamedAgg(
+                column="max_heartrate", aggfunc=lambda x: round(float(x.max()), 2)
+            ),
+            average_suffer_score=pd.NamedAgg(
+                column="suffer_score", aggfunc=mean_ignore_zeros
+            ),
+            average_elevation_rate=pd.NamedAgg(
+                column="elevation_rate", aggfunc=mean_ignore_zeros
+            ),
+        )
+        .reset_index()
+    )
 
-    return summary
+    # Calcualte and add Vo2-max
+    vo2_max_df = calculate_monthly_vo2_max(df, resting_hr, weight_kg, max_hr)
+    merged_df = pd.merge(summary_df, vo2_max_df, on="year_month", how="left")
+
+    # Convert year_month to datetime
+    merged_df["year_month_datetime"] = merged_df["year_month"].dt.to_timestamp()
+
+    # Extract year and month name
+    merged_df["year"] = merged_df["year_month_datetime"].dt.year
+    merged_df["month"] = (
+        merged_df["year_month_datetime"].dt.month_name().str[:3].str.lower()
+    )
+
+    # Drop the temporary column
+    merged_df = merged_df.drop(columns=["year_month_datetime"])
+
+    # Reorder columns
+    merged_df = merged_df[
+        [
+            "year",
+            "month",
+            "total_activities",
+            "total_distance_km",
+            "total_duration_h",
+            "total_elevation_gain_m",
+            "average_speed_kph",
+            "max_speed_kph",
+            "average_heartrate",
+            "max_heartrate",
+            "average_suffer_score",
+            "average_elevation_rate",
+            "vo2_max",
+        ]
+    ]
+
+    return merged_df
 
 
 def cumsum_summary(df: pd.DataFrame) -> pd.DataFrame:
@@ -155,10 +214,59 @@ def create_yearly_goal_df(df: pd.DataFrame, goal_type: str, goal: int) -> pd.Dat
     return merged_df
 
 
+def calculate_monthly_vo2_max(
+    df: pd.DataFrame, resting_hr: dict, weight_kg: float, max_hr: float
+) -> pd.DataFrame:
+    """
+    Calculate monthly VO2 max estimates and return a DataFrame with the average VO2 max per month.
+
+    :param df: DataFrame containing activity data with 'date' and 'average_watts' columns.
+    :param resting_hr: Dictionary containing resting heart rate data with 'year_month' keys.
+    :param weight_kg: Weight in kilograms for VO2 max calculation.
+    :param max_hr: Maximum heart rate for VO2 max calculation.
+    :return: DataFrame with 'year_month' and 'average_vo2_max' columns.
+    """
+
+    # Convert dictionary to DataFrame
+    resting_hr_df = pd.DataFrame(
+        list(resting_hr.items()), columns=["year_month", "average_resting_hr"]
+    )
+    resting_hr_df["year_month"] = pd.to_datetime(
+        resting_hr_df["year_month"] + "-01"
+    ).dt.to_period("M")
+
+    # Convert 'date' column to datetime format and extract Year-Month
+    df["date"] = pd.to_datetime(df["date"])
+    df["year_month"] = df["date"].dt.to_period("M")
+
+    # Merge resting HR data with the original DataFrame
+    df = df.merge(resting_hr_df, on="year_month", how="left")
+
+    # Calculate VO2 max using vectorized operations
+    df["vo2_max"] = (df["average_watts"] * 10.8 / weight_kg) + (
+        7 * (max_hr / df["average_resting_hr"])
+    )
+
+    # Calculate the average VO2 max per month
+    monthly_vo2_max = df.groupby("year_month")["vo2_max"].mean().reset_index()
+    monthly_vo2_max["vo2_max"] = monthly_vo2_max["vo2_max"].round(2)
+
+    return monthly_vo2_max
+
+
 if __name__ == "__main__":
     df = main()
+    df_run = filter_sport_data(df, "run")
+    pd.options.display.max_columns = 100
 
-    pd.options.display.max_columns = None
+    df_run_2024 = summary(df_run)
+    print(df_run_2024)
+
+    df_jul_2024 = summary(df, month="jul", year=2024)
+    # print(df_jul_2024)
+
+    df_may = summary(df, month="may", year=2022)
+    # print(df_may)
 
     walking_df = filter_sport_data(df, "walk")
     hiking_df = filter_sport_data(df, "hike")
@@ -167,17 +275,11 @@ if __name__ == "__main__":
     indoor_bike_df = filter_sport_data(df, "bike", "indoor")
     outdoor_bike_df = filter_sport_data(df, "bike", "outdoor")
 
-    july_summary = monthly_summary(bike_df, month="jul")
-    year_summary = monthly_summary(bike_df)
-    # print(july_summary)
-    # print(year_summary)
-
     cumsum_bike = cumsum_summary(bike_df)
 
     distance_goal_df = create_yearly_goal_df(
         cumsum_bike, goal_type="distance", goal=2000
     )
-    print(cumsum_bike)
 
     # print(cumsum_bike)
     # print(cumsum_run)
