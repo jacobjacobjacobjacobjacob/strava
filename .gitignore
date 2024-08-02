@@ -28,3 +28,6 @@ __pycache__/
 
 # Database files
 *.db
+
+# Health data
+assets/health_data.py
