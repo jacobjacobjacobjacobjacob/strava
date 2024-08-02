@@ -137,9 +137,12 @@ def filter_columns(cleaned_df: pd.DataFrame) -> pd.DataFrame:
         "suffer_score",
         "suffer_score_bucket",
         "elevation_rate",
+        "average_watts",
         "sport_type",
         "ride_type",
     ]
+    print(cleaned_df.columns)
+
     df = cleaned_df[columns].copy()
     return df
 
