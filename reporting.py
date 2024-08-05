@@ -201,46 +201,6 @@ def create_yearly_goal_df(df: pd.DataFrame, goal_type: str, goal: int) -> pd.Dat
     return merged_df
 
 
-def calculate_monthly_vo2_max(
-    df: pd.DataFrame, resting_hr: dict, weight_kg: float, max_hr: float
-) -> pd.DataFrame:
-    """
-    Calculate monthly VO2 max estimates and return a DataFrame with the average VO2 max per month.
-
-    :param df: DataFrame containing activity data with 'date' and 'average_watts' columns.
-    :param resting_hr: Dictionary containing resting heart rate data with 'year_month' keys.
-    :param weight_kg: Weight in kilograms for VO2 max calculation.
-    :param max_hr: Maximum heart rate for VO2 max calculation.
-    :return: DataFrame with 'year_month' and 'average_vo2_max' columns.
-    """
-
-    # Convert dictionary to DataFrame
-    resting_hr_df = pd.DataFrame(
-        list(resting_hr.items()), columns=["year_month", "average_resting_hr"]
-    )
-    resting_hr_df["year_month"] = pd.to_datetime(
-        resting_hr_df["year_month"] + "-01"
-    ).dt.to_period("M")
-
-    # Convert 'date' column to datetime format and extract Year-Month
-    df["date"] = pd.to_datetime(df["date"])
-    df["year_month"] = df["date"].dt.to_period("M")
-
-    # Merge resting HR data with the original DataFrame
-    df = df.merge(resting_hr_df, on="year_month", how="left")
-
-    # Calculate VO2 max using vectorized operations
-    df["vo2_max"] = (df["average_watts"] * 10.8 / weight_kg) + (
-        7 * (max_hr / df["average_resting_hr"])
-    )
-
-    # Calculate the average VO2 max per month
-    monthly_vo2_max = df.groupby("year_month")["vo2_max"].mean().reset_index()
-    monthly_vo2_max["vo2_max"] = monthly_vo2_max["vo2_max"].round(2)
-
-    return monthly_vo2_max
-
-
 if __name__ == "__main__":
     df = main()
     df_run = filter_sport_data(df, "run")
