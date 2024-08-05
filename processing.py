@@ -332,8 +332,11 @@ def calculate_vo2_max(df: pd.DataFrame) -> pd.DataFrame:
         resting_hr_df["year_month"] + "-01"
     ).dt.to_period("M")
 
+    if df["date"].dt.tz is None:
+        df["date"] = df["date"].dt.tz_localize("UTC")
+
     # Extract Year-Month to match the "resting_hr" data
-    df["year_month"] = df["date"].dt.to_period("M")
+    df["year_month"] = df["date"].dt.tz_convert(None).dt.to_period("M")
 
     # Merge resting HR data with the original DataFrame
     df = df.merge(resting_hr_df, on="year_month", how="left")
