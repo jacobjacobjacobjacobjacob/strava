@@ -275,7 +275,7 @@ if __name__ == "__main__":
     print(df_bike_2024)
 
     average_df_bike_2024 = summary_averages(outdoor_bike_df, year=2024)
-    print(average_df_bike_2024)
+    # print(average_df_bike_2024)
     july_averages = summary_averages(outdoor_bike_df, year=2024, month="jul")
 
     cumsum_bike = cumsum_summary(bike_df)
