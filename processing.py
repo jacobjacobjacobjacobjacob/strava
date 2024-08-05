@@ -10,6 +10,7 @@ from assets.utils import (
     create_dataframe,
     convert_date_to_yyyymmdd,
 )
+from assets.health_data import resting_hr, max_hr, weight_kg
 from assets.config import gear, local_tz, setup_logging
 from validation import validate_data
 
@@ -141,7 +142,6 @@ def filter_columns(cleaned_df: pd.DataFrame) -> pd.DataFrame:
         "sport_type",
         "ride_type",
     ]
-    print(cleaned_df.columns)
 
     df = cleaned_df[columns].copy()
     return df
@@ -322,6 +322,34 @@ def remove_short_rides(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def calculate_vo2_max(df: pd.DataFrame) -> pd.DataFrame:
+
+    # Convert dictionary to DataFrame
+    resting_hr_df = pd.DataFrame(
+        list(resting_hr.items()), columns=["year_month", "average_resting_hr"]
+    )
+    resting_hr_df["year_month"] = pd.to_datetime(
+        resting_hr_df["year_month"] + "-01"
+    ).dt.to_period("M")
+
+    # Extract Year-Month to match the "resting_hr" data
+    df["year_month"] = df["date"].dt.to_period("M")
+
+    # Merge resting HR data with the original DataFrame
+    df = df.merge(resting_hr_df, on="year_month", how="left")
+
+    # Calculate VO2 max using vectorized operations
+    df["vo2_max"] = (df["average_watts"] * 10.8 / weight_kg) + (
+        7 * (max_hr / df["average_resting_hr"])
+    )
+
+    # Round data and drop the helper columns
+    df["vo2_max"] = df["vo2_max"].round(2)
+    df.drop(columns=["average_resting_hr", "year_month"], inplace=True)
+
+    return df
+
+
 def clean_data(df):
     try:
         clean_df = (
@@ -338,6 +366,7 @@ def clean_data(df):
             .pipe(replace_nan_values)
             .pipe(filter_columns)
             .pipe(remove_short_rides)
+            .pipe(calculate_vo2_max)
             .pipe(convert_date_to_yyyymmdd)
             .pipe(sort_and_reset_index)
         )
