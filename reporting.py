@@ -54,6 +54,9 @@ def summary(df: pd.DataFrame, month: str = None, year: int = None) -> pd.DataFra
                 "Invalid month. Please provide month in 'mmm' format, e.g., 'jan' or 'nov'."
             )
 
+    # Ensure the input DataFrame is a copy to avoid the warning
+    df = df.copy()
+
     # Datetime
     df["date"] = pd.to_datetime(df["date"])
     df["year_month"] = df["date"].dt.to_period("M")
@@ -99,31 +102,15 @@ def summary(df: pd.DataFrame, month: str = None, year: int = None) -> pd.DataFra
             average_elevation_rate=pd.NamedAgg(
                 column="elevation_rate", aggfunc=mean_ignore_zeros
             ),
+            average_vo2_max=pd.NamedAgg(column="vo2_max", aggfunc=mean_ignore_zeros),
         )
         .reset_index()
     )
 
-    # Calcualte and add Vo2-max
-    vo2_max_df = calculate_monthly_vo2_max(df, resting_hr, weight_kg, max_hr)
-    merged_df = pd.merge(summary_df, vo2_max_df, on="year_month", how="left")
-
-    # Convert year_month to datetime
-    merged_df["year_month_datetime"] = merged_df["year_month"].dt.to_timestamp()
-
-    # Extract year and month name
-    merged_df["year"] = merged_df["year_month_datetime"].dt.year
-    merged_df["month"] = (
-        merged_df["year_month_datetime"].dt.month_name().str[:3].str.lower()
-    )
-
-    # Drop the temporary column
-    merged_df = merged_df.drop(columns=["year_month_datetime"])
-
-    # Reorder columns
-    merged_df = merged_df[
+    # Reorder columns to match your requirements
+    summary_df = summary_df[
         [
-            "year",
-            "month",
+            "year_month",
             "total_activities",
             "total_distance_km",
             "total_duration_h",
@@ -134,11 +121,11 @@ def summary(df: pd.DataFrame, month: str = None, year: int = None) -> pd.DataFra
             "max_heartrate",
             "average_suffer_score",
             "average_elevation_rate",
-            "vo2_max",
+            "average_vo2_max",
         ]
     ]
 
-    return merged_df
+    return summary_df
 
 
 def cumsum_summary(df: pd.DataFrame) -> pd.DataFrame:
@@ -257,10 +244,14 @@ def calculate_monthly_vo2_max(
 if __name__ == "__main__":
     df = main()
     df_run = filter_sport_data(df, "run")
+    df_bike = filter_sport_data(df, "bike")
     pd.options.display.max_columns = 100
 
     df_run_2024 = summary(df_run)
-    print(df_run_2024)
+    # print(df_run_2024)
+
+    df_bike_2024 = summary(df_bike)
+    print(df_bike_2024)
 
     df_jul_2024 = summary(df, month="jul", year=2024)
     # print(df_jul_2024)
