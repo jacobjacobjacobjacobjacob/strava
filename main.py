@@ -65,8 +65,8 @@ if __name__ == "__main__":
 
     df = main()
 
-    pd.options.display.max_columns = 100
-    pd.options.display.max_rows = 100
+    # pd.options.display.max_columns = 100
+    # pd.options.display.max_rows = 100
 
     if df is not None:
         write_to_database(df, "activities")
