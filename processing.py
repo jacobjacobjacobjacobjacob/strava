@@ -317,8 +317,14 @@ def remove_short_rides(df: pd.DataFrame) -> pd.DataFrame:
     :returns
         pd.DataFrame: DataFrame with short rides removed.
     """
-    if "ride_type" in df.columns:
-        df = df.drop(df[(df["sport_type"] == "outdoor") & (df["distance"] < 10)].index)
+    if "ride_type" in df.columns and "sport_type" in df.columns:
+        df = df.drop(
+            df[
+                (df["ride_type"] == "outdoor")
+                & (df["sport_type"] == "bike")
+                & (df["distance"] < 10)
+            ].index
+        )
     return df
 
 
