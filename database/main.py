@@ -27,7 +27,6 @@ def write_to_database(df: pd.DataFrame, table_name: str) -> None:
         return
 
     try:
-        logger.info(f"Writing DataFrame to table '{table_name}' in the database.")
         logger.debug(f"DataFrame shape: {df.shape}")
         logger.debug(f"DataFrame head:\n{df.head()}")
 
