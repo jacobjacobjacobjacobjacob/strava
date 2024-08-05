@@ -14,7 +14,7 @@ load_dotenv()
 strava_client_id = os.getenv("STRAVA_CLIENT_ID")
 strava_client_secret = os.getenv("STRAVA_CLIENT_SECRET")
 strava_refresh_token = os.getenv("STRAVA_REFRESH_TOKEN")
-strava_access_token = os.getenv("token")
+strava_access_token = os.getenv("STRAVA_ACCESS_TOKEN")
 
 
 def get_strava_tokens() -> str:
@@ -41,7 +41,7 @@ def get_strava_tokens() -> str:
             logger.info("Successfully retrieved new access token.")
 
             # Load existing .env file and update the access token
-            env_file = ".env"
+            env_file = "api/.env"
             load_dotenv(env_file)
             set_key(env_file, "token", access_token)
             logger.info("Access token written to .env file.")
