@@ -7,7 +7,7 @@ from assets.utils import all_months, month_mapping
 from assets.health_data import resting_hr, max_hr, weight_kg
 
 
-def filter_sport_data(
+def filter_sport_type(
     df: pd.DataFrame, sport_type: str, ride_type: str = None
 ) -> pd.DataFrame:
     """
@@ -37,7 +37,9 @@ def filter_sport_data(
         raise ValueError("Invalid sport type. Choose 'walk', 'hike', 'bike' or 'run'")
 
 
-def summary(df: pd.DataFrame, month: str = None, year: int = None) -> pd.DataFrame:
+def summary_totals(
+    df: pd.DataFrame, month: str = None, year: int = None
+) -> pd.DataFrame:
     """
     Generate a summary of activities for the given month.
 
@@ -54,14 +56,83 @@ def summary(df: pd.DataFrame, month: str = None, year: int = None) -> pd.DataFra
                 "Invalid month. Please provide month in 'mmm' format, e.g., 'jan' or 'nov'."
             )
 
-    # Ensure the input DataFrame is a copy to avoid the warning
     df = df.copy()
 
     # Datetime
     df["date"] = pd.to_datetime(df["date"])
     df["year_month"] = df["date"].dt.to_period("M")
 
-    # Ignore zero values for averages
+    # Group by year_month and aggregate
+    summary_df = (
+        df.groupby("year_month")
+        .agg(
+            total_activities=pd.NamedAgg(column="id", aggfunc="count"),
+            total_distance_km=pd.NamedAgg(
+                column="distance", aggfunc=lambda x: round(float(x.sum()), 1)
+            ),
+            total_duration_h=pd.NamedAgg(
+                column="duration", aggfunc=lambda x: round(float(x.sum()), 1)
+            ),
+            total_elevation_gain_m=pd.NamedAgg(
+                column="elevation_gain", aggfunc=lambda x: round(float(x.sum()), 0)
+            ),
+            vo2_max=pd.NamedAgg(
+                column="vo2_max", aggfunc=lambda x: round(float(x.max()), 1)
+            ),
+        )
+        .reset_index()
+    )
+
+    summary_df["vo2_max"] = summary_df["vo2_max"].round(1)
+
+    # Split 'year_month' into 'year' and 'month'
+    summary_df["year"] = summary_df["year_month"].dt.year
+    summary_df["month"] = summary_df["year_month"].dt.month
+
+    # Map months
+    summary_df["month"] = summary_df["month"].map(month_mapping)
+
+    summary_df = summary_df[
+        [
+            "year",
+            "month",
+            "total_activities",
+            "total_distance_km",
+            "total_duration_h",
+            "total_elevation_gain_m",
+            "vo2_max",
+        ]
+    ]
+
+    return summary_df
+
+
+def summary_averages(
+    df: pd.DataFrame, month: str = None, year: int = None
+) -> pd.DataFrame:
+    """
+    Generate a summary of averages for the given time period.
+
+    :param df: DataFrame containing Strava data.
+    :param year: Optional year to filter the data.
+    :param month: Optional month (in abbreviated form, f.ex "jan") to filter the data.
+    :return: dict: summary of averages for the given period.
+    """
+
+    # Filtering
+    if month:
+        if month.lower() not in all_months:
+            raise ValueError(
+                "Invalid month. Please provide month in 'mmm' format, e.g., 'jan' or 'nov'."
+            )
+
+    df = df.copy()
+
+    # Datetime
+    df["date"] = pd.to_datetime(df["date"])
+    df["year_month"] = df["date"].dt.to_period("M")
+
+    # Ignore zero values for calculating averages
     def mean_ignore_zeros(series: pd.Series) -> float:
         non_zero_values = series[series > 0]
         return (
@@ -70,31 +141,14 @@ def summary(df: pd.DataFrame, month: str = None, year: int = None) -> pd.DataFra
             else 0.0
         )
 
-    # Group by year_month and aggregate
-    summary_df = (
+    average_summary_df = (
         df.groupby("year_month")
         .agg(
-            total_activities=pd.NamedAgg(column="id", aggfunc="count"),
-            total_distance_km=pd.NamedAgg(
-                column="distance", aggfunc=lambda x: round(float(x.sum()), 2)
-            ),
-            total_duration_h=pd.NamedAgg(
-                column="duration", aggfunc=lambda x: round(float(x.sum()), 2)
-            ),
-            total_elevation_gain_m=pd.NamedAgg(
-                column="elevation_gain", aggfunc=lambda x: round(float(x.sum()), 2)
-            ),
             average_speed_kph=pd.NamedAgg(
                 column="average_speed", aggfunc=mean_ignore_zeros
             ),
-            max_speed_kph=pd.NamedAgg(
-                column="max_speed", aggfunc=lambda x: round(float(x.max()), 2)
-            ),
             average_heartrate=pd.NamedAgg(
                 column="average_heartrate", aggfunc=mean_ignore_zeros
-            ),
-            max_heartrate=pd.NamedAgg(
-                column="max_heartrate", aggfunc=lambda x: round(float(x.max()), 2)
             ),
             average_suffer_score=pd.NamedAgg(
                 column="suffer_score", aggfunc=mean_ignore_zeros
@@ -107,25 +161,26 @@ def summary(df: pd.DataFrame, month: str = None, year: int = None) -> pd.DataFra
         .reset_index()
     )
 
-    # Reorder columns to match your requirements
-    summary_df = summary_df[
+    # Split 'year_month' into 'year' and 'month'
+    average_summary_df["year"] = average_summary_df["year_month"].dt.year
+    average_summary_df["month"] = average_summary_df["year_month"].dt.month
+
+    # Map months
+    average_summary_df["month"] = average_summary_df["month"].map(month_mapping)
+
+    average_summary_df = average_summary_df[
         [
-            "year_month",
-            "total_activities",
-            "total_distance_km",
-            "total_duration_h",
-            "total_elevation_gain_m",
+            "year",
+            "month",
             "average_speed_kph",
-            "max_speed_kph",
             "average_heartrate",
-            "max_heartrate",
             "average_suffer_score",
             "average_elevation_rate",
             "average_vo2_max",
         ]
     ]
 
-    return summary_df
+    return average_summary_df
 
 
 def cumsum_summary(df: pd.DataFrame) -> pd.DataFrame:
@@ -203,41 +258,29 @@ def create_yearly_goal_df(df: pd.DataFrame, goal_type: str, goal: int) -> pd.Dat
 
 if __name__ == "__main__":
     df = main()
-    df_run = filter_sport_data(df, "run")
-    df_bike = filter_sport_data(df, "bike")
+
+    walking_df = filter_sport_type(df, "walk")
+    hiking_df = filter_sport_type(df, "hike")
+    running_df = filter_sport_type(df, "run")
+    bike_df = filter_sport_type(df, "bike")
+    indoor_bike_df = filter_sport_type(df, "bike", "indoor")
+    outdoor_bike_df = filter_sport_type(df, "bike", "outdoor")
+
     pd.options.display.max_columns = 100
 
-    df_run_2024 = summary(df_run)
-    # print(df_run_2024)
+    df_run = summary_totals(running_df, year=2024)
+    # print(df_run)
 
-    df_bike_2024 = summary(df_bike)
+    df_bike_2024 = summary_totals(outdoor_bike_df, year=2024)
     print(df_bike_2024)
 
-    df_jul_2024 = summary(df, month="jul", year=2024)
-    # print(df_jul_2024)
-
-    df_may = summary(df, month="may", year=2022)
-    # print(df_may)
-
-    walking_df = filter_sport_data(df, "walk")
-    hiking_df = filter_sport_data(df, "hike")
-    running_df = filter_sport_data(df, "run")
-    bike_df = filter_sport_data(df, "bike")
-    indoor_bike_df = filter_sport_data(df, "bike", "indoor")
-    outdoor_bike_df = filter_sport_data(df, "bike", "outdoor")
+    average_df_bike_2024 = summary_averages(outdoor_bike_df, year=2024)
+    print(average_df_bike_2024)
+    july_averages = summary_averages(outdoor_bike_df, year=2024, month="jul")
 
     cumsum_bike = cumsum_summary(bike_df)
+    print(cumsum_bike)
 
     distance_goal_df = create_yearly_goal_df(
         cumsum_bike, goal_type="distance", goal=2000
     )
-
-    # print(cumsum_bike)
-    # print(cumsum_run)
-
-    # print("Walking Data:\n", walking_df)
-    # print("Hiking Data:\n", hiking_df)
-    # print("Running Data:\n", running_df)
-    # print("Cycling Data:\n", cycling_df)
-    # print("Indoor Cycling Data:\n", indoor_cycling_df)
-    # print("Outdoor Cycling Data:\n", outdoor_cycling_df)
