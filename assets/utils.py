@@ -102,6 +102,15 @@ def sec_to_h(sec: float) -> float:
     return sec / 3600
 
 
+all_weekdays = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+metric_formats = {
+    "distance": "km",
+    "duration": "h",
+    "elevation": "m",
+    "activities": "#",
+}
+
+
 all_months = [
     "jan",
     "feb",
@@ -116,6 +125,7 @@ all_months = [
     "nov",
     "dec",
 ]
+
 
 month_mapping = {
     1: "jan",

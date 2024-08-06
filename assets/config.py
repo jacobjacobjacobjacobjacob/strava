@@ -2,6 +2,8 @@
 import pytz
 import logging
 
+STRAVA_DATA_PATH = "data/clean_data.csv"
+DASHAPP_TITLE = "Strava"
 
 # Strava gear_id's, representing different types of gear, in this case spinning bike/outdoor road bike.
 gear = {
