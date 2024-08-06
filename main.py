@@ -60,14 +60,9 @@ def main(csv_file="data/raw_data.csv") -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-
     # fetch_strava_data()
 
     df = main()
-
-    pd.options.display.max_columns = 100
-    pd.options.display.max_rows = 100
-    print(df["distance"])
 
     if df is not None:
         write_to_database(df, "activities")
