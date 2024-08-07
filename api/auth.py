@@ -44,7 +44,6 @@ def get_strava_tokens() -> str:
             env_file = "api/.env"
             load_dotenv(env_file)
             set_key(env_file, "token", access_token)
-            logger.info("Access token written to .env file.")
         else:
             logger.warning("Access token not found in the response.")
         return access_token
