@@ -60,7 +60,7 @@ def main(csv_file="data/raw_data.csv") -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    # fetch_strava_data()
+    fetch_strava_data()
 
     df = main()
 

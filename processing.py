@@ -380,8 +380,6 @@ def clean_data(df):
             .pipe(sort_and_reset_index)
         )
 
-        logger.info("DataFrame cleaning process completed successfully.")
-
     except Exception as e:
         logger.error(f"Error during DataFrame cleaning: {e}")
         raise

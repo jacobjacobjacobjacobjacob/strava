@@ -31,9 +31,6 @@ def write_to_database(df: pd.DataFrame, table_name: str) -> None:
         logger.debug(f"DataFrame head:\n{df.head()}")
 
         df.to_sql(table_name, con=engine, if_exists="replace", index=False)
-        logger.info(
-            f"DataFrame successfully written to table '{table_name}' in the database."
-        )
     except Exception as e:
         logger.error(
             f"An error occurred while writing to the database: {e}", exc_info=True
