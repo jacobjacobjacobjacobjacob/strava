@@ -249,7 +249,7 @@ def sort_and_reset_index(df: pd.DataFrame) -> pd.DataFrame:
 def map_sport_types(df: pd.DataFrame, gear_dict) -> pd.DataFrame:
     """
     - Map ride_type values based on gear dictionary.
-    - Filter sport_type by "cycling" or "running"
+    - Filter sport_type by "cycling" or "running" and drop rows with sport_type "walk".
 
     :param
         df (pd.DataFrame): The DataFrame containing Strava data.
@@ -268,15 +268,14 @@ def map_sport_types(df: pd.DataFrame, gear_dict) -> pd.DataFrame:
             else (
                 "run"
                 if row["sport_type"] == "run"
-                else (
-                    "hike"
-                    if row["sport_type"] == "hike"
-                    else "walk" if row["sport_type"] == "walk" else row["sport_type"]
-                )
+                else ("hike" if row["sport_type"] == "hike" else row["sport_type"])
             )
         ),
         axis=1,
     )
+
+    # Drop rows with sport_type "walk"
+    df = df[df["sport_type"] != "walk"]
 
     return df
 
