@@ -31,3 +31,5 @@ __pycache__/
 
 # Health data
 assets/health_data.py
+
+dash_app/
