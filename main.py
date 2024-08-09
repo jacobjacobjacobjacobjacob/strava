@@ -7,7 +7,6 @@ from api.update_data import fetch_strava_data
 from assets.utils import create_dataframe, save_to_csv
 from processing import clean_data
 from validation import validate_data
-from database.main import engine, write_to_database
 
 # Logging
 logging.basicConfig(level=logging.INFO)
@@ -63,8 +62,3 @@ if __name__ == "__main__":
     fetch_strava_data()
 
     df = main()
-
-    if df is not None:
-        write_to_database(df, "activities")
-    else:
-        logger.error("DataFrame processing failed.")
