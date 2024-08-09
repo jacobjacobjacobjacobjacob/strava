@@ -1,12 +1,11 @@
 # main.py
 import pandas as pd
-import os
 import logging
 
 from api.update_data import fetch_strava_data
 from assets.utils import create_dataframe, save_to_csv
-from processing import clean_data
-from validation import validate_data
+from modules.processing import clean_data
+from modules.validation import validate_data
 
 # Logging
 logging.basicConfig(level=logging.INFO)

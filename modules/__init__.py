@@ -1,1 +1,1 @@
-# $/__init__.py.py
+# modules/__init__.py

@@ -12,7 +12,7 @@ from assets.utils import (
 )
 from assets.health_data import resting_hr, max_hr, weight_kg
 from assets.config import gear, local_tz, setup_logging
-from validation import validate_data
+from modules.validation import validate_data
 
 setup_logging()
 logger = logging.getLogger(__name__)
