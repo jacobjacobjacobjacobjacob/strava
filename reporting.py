@@ -271,7 +271,7 @@ if __name__ == "__main__":
     df_run = summary_totals(running_df, year=2024)
     # print(df_run)
 
-    df_bike_2024 = summary_totals(outdoor_bike_df, year=2024)
+    df_bike_2024 = summary_totals(outdoor_bike_df, year=2024, month="aug")
     print(df_bike_2024)
 
     average_df_bike_2024 = summary_averages(outdoor_bike_df, year=2024)
@@ -279,7 +279,7 @@ if __name__ == "__main__":
     july_averages = summary_averages(outdoor_bike_df, year=2024, month="jul")
 
     cumsum_bike = cumsum_summary(bike_df)
-    print(cumsum_bike)
+    # print(cumsum_bike)
 
     distance_goal_df = create_yearly_goal_df(
         cumsum_bike, goal_type="distance", goal=2000
