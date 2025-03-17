@@ -1,7 +1,7 @@
 
 # Strava Analysis Project
 
-This project analyzes workout data, focusing on activities like running and cycling. It integrates multiple data sources, such as Strava data, and retrieves weather data for the location of individual Strava activities, storing it in SQLite databases for further analysis.
+This project analyzes workout data, focusing on activities like running and cycling.
 
 ## Project Structure
 
@@ -11,21 +11,6 @@ This project analyzes workout data, focusing on activities like running and cycl
 │   ├── database.db              # Database
 ├── requirements.txt             # Python dependencies
 ├── src
-│   ├── api                      # API clients for interacting with external services
-│   │   ├── strava_api.py        # Client for interacting with Strava API
-│   │   ├── weather_api.py       # Client for interacting with the OpenMeteo API
-│   │   └── weather_client.py    # Client for fetching weather data
-│   └── config.py                 # Loading API config(s)
-│   └── constants.py             # Dictionaries for mapping etc. 
-│   └── db.py                    # SQLite database connections and schema setup
-│   └── queries.py               # Common queries for interacting with the databases
-│   ├── models                   # Data models for activity, best_efforts, gear, splits, zones, and weather
-│   │   ├── activity.py          # Model for Strava activities in general
-│   │   ├── best_efforts.py      # Model for extracting and processing best efforts 
-│   │   ├── gear.py              # Model for extracting and processing gear (shoes, bikes etc.)
-│   │   ├── split.py             # Model for extracting and processing splits data 
-│   │   ├── zones.py             # Model for extracting and processing zones data (heartrate, pace etc.)
-│   │   ├── weather.py           # Model for extracting relevant data from the Strava data to pass to the Weather API. 
 ├── main.py                      
 ```
 
@@ -81,13 +66,13 @@ To run the main script, execute:
 python main.py
 ```
 
-## API Clients
+## Strava API Client
 
-The project includes clients for interacting with external services:
+The project includes a client for interacting with the Strava API:
 
 - **Strava Client**: Fetches activity data from Strava.
-- **Weather Client**: Retrieves weather data for activities.
+
 
 ## Database
 
-The project uses SQLite databases to store activity, gear, and weather data. You can explore the database schema and write custom queries using the `db.py` and `queries.py` modules.
+The project uses SQLite databases to store activity, gear, and weather data. You can explore the database schema and write custom queries using the `db_manager.py` and `queries.py` modules.
