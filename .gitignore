@@ -9,3 +9,5 @@ __pycache__/
 *.pyc
 *.csv
 dash_app/
+*.fit
+fit_parser.py
