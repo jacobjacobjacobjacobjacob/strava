@@ -1,7 +1,8 @@
 # main.py
 import pandas as pd
 from loguru import logger
-from src.api.strava_api import StravaClient
+from src.api.strava_api.strava_api import StravaClient
+from src.api.config import get_strava_api_config
 from src.db.db_manager import DatabaseManager
 from src.models.gear import Gear
 from src.models.splits import Splits
@@ -9,8 +10,17 @@ from src.models.zones import Zones
 from src.models.activity import Activity
 from src.models.best_efforts import BestEfforts
 from src.models.streams import Streams
-from src.config import get_strava_config
-from src.utils.logger import log_new_activity_details
+from src.models.health import AppleHealth
+from src.config import (
+    ENABLE_APPLE_HEALTH_DATA,
+    PATH_TO_APPLE_HEALTH_DATA,
+)
+from src.utils.logging import (
+    log_new_activity_details,
+    log_apple_health_data_toggle,
+    log_new_activities_count,
+    log_new_gear,
+)
 
 
 def main():
@@ -19,7 +29,7 @@ def main():
 
     # If no new activites are found
     if not activities_data:
-        logger.error("No activities data fetched from Strava.")
+        logger.error("Could not fetch data from Strava.")
         return
 
     # If data is recieved, turn to dataframe
@@ -28,61 +38,73 @@ def main():
     # If dataframe is empty, no new activities to process
     if activities_df.empty:
         logger.warning("No new activities to process.")
-        db_manager.check_discrepancies()  # Check discrepancies between recieved and stored data
+        db_manager.check_strava_database_discrepancies()  # Check discrepancies between recieved and stored data
         return
 
     try:
+        """ACTIVITY DATA"""
         # Process and filter activities
+        logger.info("Processing activity data...")
         activities_df = Activity.process_activity_data(activities_df)
-
-        # Update gear data
-        gear_df = Gear.process_gears(strava_client, activities_df)
-        db_manager.insert_dataframe_to_db(df=gear_df, table_name="gear")
-
-        """ SAVE TO CSV """
-        # activities_df.to_csv("strava_data.csv", index=False)
 
         # Retrieve all the cached ids
         cached_ids = db_manager.get_ids_from_cache()
 
-        # Filter the dataframe to only include new activities using the cached ids
+        # Filter the dataframe for new activities and get a list of new activity IDs
         new_activities_df = activities_df[~activities_df["id"].isin(cached_ids)]
-
-        # Extract a list of the new activity IDs
+      
         new_activity_ids = new_activities_df["id"].tolist()
-
+    
         # If there are new IDs
         if new_activity_ids:
-            logger.info(f"{len(new_activity_ids)} new activities.")
+            log_new_activities_count(new_activity_ids)
 
-            # Insert new activities into the database
             db_manager.insert_dataframe_to_db(
                 df=new_activities_df, table_name="activities"
             )
-
-            # Process each new activity in detail
-            # logger.debug(f"Cached activities before processing: {len(cached_ids)}")
             process_new_activities(new_activity_ids)
 
-            # len_cache_after = db_manager.get_ids_from_cache()
-            # logger.debug(f"Cached activities after processing: {len(len_cache_after)}")
-            # logger.debug(
-            #     f"New rows inserted to cache: {len(len_cache_after) - len(cached_ids)}"
-            # )
+            """ GEAR DATA """
+            # Process gear data
+            logger.info("Processing gear data...")
+            gear_ids = db_manager.get_gear_ids()
+            gear_df = Gear.process_gears(strava_client, activities_df)
+            new_gear_df = gear_df[~gear_df["gear_id"].isin(gear_ids)]
+
+            # Check if new gear is detected
+            if not new_gear_df.empty:  
+                log_new_gear(new_gear_df)
+
+            db_manager.insert_dataframe_to_db(df=gear_df, table_name="gear")
 
         else:
-            logger.warning("No new activities.")
+            logger.info("No new activities.\n")
 
     except Exception as e:
         logger.error(f"Error during main processing: {e}")
 
     finally:
-        db_manager.check_discrepancies()
+        db_manager.check_strava_database_discrepancies()
+
+    """ APPLE HEALTH DATA """
+    # Health data processing
+    if not ENABLE_APPLE_HEALTH_DATA:
+        log_apple_health_data_toggle()
+        return
+    try:
+        # Process Apple Health data if enabled
+        log_apple_health_data_toggle()
+        process_apple_health_data()
+    except Exception as e:
+        logger.error(f"Error processing Apple Health data: {e}")
+
+    finally:
+        if ENABLE_APPLE_HEALTH_DATA:
+            db_manager.check_health_database_discrepancies()
 
 
 def process_new_activities(new_activity_ids):
     for activity_id in new_activity_ids:
-
         db_manager.update_cache(activity_id)
 
         try:
@@ -100,7 +122,8 @@ def process_new_activities(new_activity_ids):
             logger.error(f"Error processing activity {activity_id}: {e}")
 
 
-def process_individual_activity(activity_id, detailed_activity):
+
+def process_individual_activity(activity_id: int, detailed_activity):
     try:
         detailed_activity_df = pd.DataFrame([detailed_activity])
         splits_df = Splits.process_splits(strava_client, detailed_activity_df)
@@ -114,60 +137,55 @@ def process_individual_activity(activity_id, detailed_activity):
 
         log_new_activity_details(activity_id, detailed_activity_df)
 
-        # DEBUGGING
-        # logger.debug(f"Length of detailed_activity_df: {len(detailed_activity_df)}")
-        # logger.debug(f"Length of splits_df: {len(splits_df)}")
-        # logger.debug(f"Length of zones_df: {len(zones_df)}")
-        # logger.debug(f"Length of best_efforts_df: {len(detailed_activity_df)}")
-
-        # IDs before inserting
-        # logger.debug(f"Rows in database before inserting:")
-        # splits_before = db_manager.get_ids_from_splits()
-        # logger.debug(f"Splits: {len(splits_before)}")
-        # streams_before = db_manager.get_ids_from_streams()
-        # logger.debug(f"Streams: {len(streams_before)}")
-        # best_efforts_before = db_manager.get_ids_from_best_efforts()
-        # logger.debug(f"Best Efforts: {len(best_efforts_before)}")
-        # zones_before = db_manager.get_ids_from_zones()
-        # logger.debug(f"Best Efforts: {len(zones_before)}")
-
         # Insert processed data into the database
         db_manager.insert_dataframe_to_db(df=splits_df, table_name="splits")
         db_manager.insert_dataframe_to_db(df=zones_df, table_name="zones")
         db_manager.insert_dataframe_to_db(df=best_efforts_df, table_name="best_efforts")
         db_manager.insert_dataframe_to_db(df=streams_df, table_name="streams")
 
-        # COMPARING IDS
-        # logger.debug(f"Rows in database after inserting:")
-        # splits_after = db_manager.get_ids_from_splits()
-        # logger.debug(f"Splits: {len(splits_after)}")
-        # streams_after = db_manager.get_ids_from_streams()
-        # logger.debug(f"Streams: {len(streams_after)}")
-        # best_efforst_after = db_manager.get_ids_from_best_efforts()
-        # logger.debug(f"Best Efforts: {len(best_efforst_after)}")
-        # zones_after = db_manager.get_ids_from_zones()
-        # logger.debug(f"Zones: {len(zones_after)}")
-
-        # DIFFERENCES:
-        # logger.debug("Differences in row numbers:")
-        # logger.debug(f"Splits: {len(splits_after) - len(splits_before)}")
-        # logger.debug(f"Streams: {len(streams_after) - len(streams_before)}")
-        # logger.debug(
-        #     f"Best Efforts: {len(best_efforst_after) - len(best_efforts_before)}"
-        # )
-        # logger.debug(f"Zones: {len(zones_after) - len(zones_before)}")
-
-        # logger.success(f"Processed {len(detailed_activity_df)} new activities")
-
     except Exception as e:
         logger.error(f"Error in processing individual activity {activity_id}: {e}")
 
 
+def process_apple_health_data():
+    """Handles the Apple Health data processing."""
+    health_df = AppleHealth.from_csv(PATH_TO_APPLE_HEALTH_DATA)
+    # logger.debug(f"Original HEALTH DF shape: {health_df.shape}")
+
+    # Crop df
+    # logger.debug(f"Cropped HEALTH DF shape: {health_df.shape}")
+
+    # Unique dates in the new DF
+    # log_info(f"Unique dates in the new DF: {len(health_df['date'].unique())}")
+
+    # Unique dates in the DB
+    dates = db_manager.get_dates_from_health()
+    # log_info(f"Unique dates in the DB: {len(dates)}")
+
+    # Dates in the dataframe that are not in the DB
+    # logger.debug(f"Dates in the dataframe that are not in the DB: {health_df[~health_df['date'].isin(dates)]['date'].unique()}")
+
+    # Filter the dataframe to only include new health data
+    new_health_data = health_df[~health_df["date"].isin(dates)]
+    # logger.debug(f"Number of new dates: {len(new_health_data['date'].tolist())}")
+
+    # Insert health data into the database
+    if len(new_health_data) == 0:
+        logger.info("No new health data.")
+    else:
+        logger.debug(f"Inserting {len(new_health_data)} new rows into Database...")
+        db_manager.insert_dataframe_to_db(df=new_health_data, table_name="health")
+
+
 if __name__ == "__main__":
-    strava_client = StravaClient(**get_strava_config())
+    logger.error("MOVE ALL ERROR HANDLING TO SEPARATE FILE")
+
+    strava_client = StravaClient(**get_strava_api_config())
+
     db_manager = DatabaseManager()
     db_manager.create_all_tables()
 
-    # df = db_manager.get_table_as_dataframe("activities")
-
     main()
+
+    def log_database_summary():
+        logger.debug("Make seomthing here to log a summary")
