@@ -62,6 +62,7 @@ class Gear:
                 "weight",
             ],
         )
+
         gear_df["retired"] = gear_df["retired"].astype(
             int
         )  # Convert boolean to integer
