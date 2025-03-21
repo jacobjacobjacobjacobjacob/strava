@@ -11,3 +11,4 @@ __pycache__/
 dash_app/
 *.fit
 fit_parser.py
+__pycache__
