@@ -93,7 +93,8 @@ class Activity:
         if "date" not in df or "duration" not in df:
             raise ValueError('Missing required columns: "date" and "duration".')
 
-        df["start_time"] = pd.to_datetime(df["date"])
+        # df["start_time"] = pd.to_datetime(df["date"])
+        df["start_time"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
         df["date"] = df["start_time"].dt.strftime("%Y-%m-%d")
         df["month"] = df["start_time"].dt.strftime("%m")
         df["day_of_week"] = df["start_time"].dt.strftime("%A").str.title()
