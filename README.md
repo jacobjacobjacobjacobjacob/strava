@@ -6,12 +6,7 @@ This project analyzes workout data, focusing on activities like running and cycl
 ## Project Structure
 
 ```
-.
-├── database
-│   ├── database.db              # Database
-├── requirements.txt             # Python dependencies
-├── src
-├── main.py                      
+WIP                   
 ```
 
 ## Setup
