@@ -27,6 +27,7 @@ def main():
     # Retrieves activities
     activities_data = strava_client.get_activities()
 
+
     # If no new activites are found
     if not activities_data:
         logger.error("Could not fetch data from Strava.")
@@ -38,7 +39,7 @@ def main():
     # If dataframe is empty, no new activities to process
     if activities_df.empty:
         logger.warning("No new activities to process.")
-        db_manager.check_strava_database_discrepancies()  # Check discrepancies between recieved and stored data
+        db_manager.check_strava_database_discrepancies()
         return
 
     try:
@@ -50,32 +51,18 @@ def main():
         # Retrieve all the cached ids
         cached_ids = db_manager.get_ids_from_cache()
 
+
         # Filter the dataframe for new activities and get a list of new activity IDs
         new_activities_df = activities_df[~activities_df["id"].isin(cached_ids)]
-      
+
         new_activity_ids = new_activities_df["id"].tolist()
-    
+
         # If there are new IDs
         if new_activity_ids:
             log_new_activities_count(new_activity_ids)
 
-            db_manager.insert_dataframe_to_db(
-                df=new_activities_df, table_name="activities"
-            )
-            process_new_activities(new_activity_ids)
-
-            """ GEAR DATA """
-            # Process gear data
-            logger.info("Processing gear data...")
-            gear_ids = db_manager.get_gear_ids()
-            gear_df = Gear.process_gears(strava_client, activities_df)
-            new_gear_df = gear_df[~gear_df["gear_id"].isin(gear_ids)]
-
-            # Check if new gear is detected
-            if not new_gear_df.empty:  
-                log_new_gear(new_gear_df)
-
-            db_manager.insert_dataframe_to_db(df=gear_df, table_name="gear")
+            process_new_activities(new_activity_ids, new_activities_df)
+            process_gear_data(df=activities_df)
 
         else:
             logger.info("No new activities.\n")
@@ -86,7 +73,7 @@ def main():
     finally:
         db_manager.check_strava_database_discrepancies()
 
-    """ APPLE HEALTH DATA """
+    """ APPLE HEALTH DATA 
     # Health data processing
     if not ENABLE_APPLE_HEALTH_DATA:
         log_apple_health_data_toggle()
@@ -100,10 +87,22 @@ def main():
 
     finally:
         if ENABLE_APPLE_HEALTH_DATA:
-            db_manager.check_health_database_discrepancies()
+            db_manager.check_health_database_discrepancies()"""
 
 
-def process_new_activities(new_activity_ids):
+def process_gear_data(df: pd.DataFrame) -> None:
+    gear_ids = db_manager.get_gear_ids()
+    gear_df = Gear.process_gears(strava_client, df)
+    new_gear_df = gear_df[~gear_df["gear_id"].isin(gear_ids)]
+
+    if not new_gear_df.empty:
+        log_new_gear(new_gear_df)
+
+    db_manager.insert_dataframe_to_db(df=gear_df, table_name="gear")
+
+
+def process_new_activities(new_activity_ids, new_activities_df):
+    db_manager.insert_dataframe_to_db(df=new_activities_df, table_name="activities")
     for activity_id in new_activity_ids:
         db_manager.update_cache(activity_id)
 
@@ -120,7 +119,6 @@ def process_new_activities(new_activity_ids):
 
         except Exception as e:
             logger.error(f"Error processing activity {activity_id}: {e}")
-
 
 
 def process_individual_activity(activity_id: int, detailed_activity):
@@ -178,14 +176,59 @@ def process_apple_health_data():
 
 
 if __name__ == "__main__":
-    logger.error("MOVE ALL ERROR HANDLING TO SEPARATE FILE")
+    # logger.error("MOVE ALL ERROR HANDLING TO SEPARATE FILE")
 
     strava_client = StravaClient(**get_strava_api_config())
 
     db_manager = DatabaseManager()
+    # db_manager.drop_table("activities")
     db_manager.create_all_tables()
+    # db_manager.delete_last_activity()
+    # df = db_manager.get_table_as_dataframe("activities")
+
+    # run_df = df[df["sport_type"] == "Run"]
+
+    
+
 
     main()
 
     def log_database_summary():
-        logger.debug("Make seomthing here to log a summary")
+        logger.info("Make something here to log a summary of all records in database")
+        logger.info("Log project info in general")
+
+    # Filtering Operations
+    # from rich import Console
+    # from rich import Table
+    # console = Console()
+    
+
+
+
+    # def print_dataframe(df: pd.DataFrame, title: str = "DataFrame", highlight_columns=None):
+    #     """Prints a Pandas DataFrame as a styled Rich table.
+        
+    #     Args:
+    #         df (pd.DataFrame): The DataFrame to print.
+    #         title (str): Table title.
+    #         highlight_columns (list): Columns to highlight in bold.
+    #     """
+    #     if df.empty:
+    #         console.print(f"[bold red]{title} is empty![/bold red]")
+    #         return
+
+    #     table = Table(title=title)
+
+    #     # Highlight specific columns if provided
+    #     highlight_columns = set(highlight_columns or [])
+
+    #     # Add column headers
+    #     for col in df.columns:
+    #         style = "bold yellow" if col in highlight_columns else "cyan"
+    #         table.add_column(str(col), justify="right", style=style)
+
+    #     # Add rows
+    #     for _, row in df.iterrows():
+    #         table.add_row(*map(str, row))
+
+    #     console.print(table)
