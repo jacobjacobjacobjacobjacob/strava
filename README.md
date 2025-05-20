@@ -10,7 +10,9 @@ WIP
 ```
 
 ## Setup
-
+```
+WIP                   
+```
 ### Prerequisites
 - Python 3.12 or higher
 - `pip` (Python package manager)
@@ -52,6 +54,9 @@ STRAVA_ATHLETE_ID=your_athlete_id
 ```
 
 ## Usage
+```
+WIP                   
+```
 
 ### Running the Analysis
 
@@ -61,13 +66,7 @@ To run the main script, execute:
 python main.py
 ```
 
-## Strava API Client
-
-The project includes a client for interacting with the Strava API:
-
-- **Strava Client**: Fetches activity data from Strava.
-
 
 ## Database
 
-The project uses SQLite databases to store activity, gear, and weather data. You can explore the database schema and write custom queries using the `db_manager.py` and `queries.py` modules.
+The project uses SQLite databases to store data on activities, gear usage, best efforts, splits and so on. You can explore the database schema and write custom queries using the `db_manager.py` and `queries.py` modules.
