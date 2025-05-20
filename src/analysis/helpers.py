@@ -68,13 +68,6 @@ def get_total_by_metric(df: pd.DataFrame, metric: str, sport_type: str) -> int:
     return total_metric
 
 
-def add_cumsum_column(df: pd.DataFrame, metric: str) -> pd.DataFrame:
-    if metric in df.columns:
-        df[f"cumulative_{metric}"] = df[metric].cumsum()
-    else:
-        raise ValueError(f"Invalid metric: {metric}")
-    return df
-
 def get_monthly_cumsum(df: pd.DataFrame, metric: str) -> pd.DataFrame:
     # Ensure data is sorted by date
     df = df.sort_values(by="date")
