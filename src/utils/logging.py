@@ -5,8 +5,6 @@ from loguru import logger
 from src.config import ENABLE_APPLE_HEALTH_DATA
 
 
-
-
 def log_new_activities_count(new_activity_ids: list) -> None:
     """Logs the number of new activities found"""
     new_activities_count = len(new_activity_ids)
@@ -40,14 +38,6 @@ def log_new_activity_details(activity_id: int, detailed_activity_df) -> None:
     date = format_date(date)
 
     logger.info(f"- {date} - {sport_type} - {name}\n")
-
-
-def log_apple_health_data_toggle() -> None:
-    """Logs whether Apple Health data is enabled or disabled."""
-    if ENABLE_APPLE_HEALTH_DATA:
-        logger.info("Apple Health data is enabled.")
-    else:
-        logger.warning("Apple Health data is disabled.")
 
 
 def log_new_gear(new_gear_df: pd.DataFrame) -> bool:
