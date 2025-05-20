@@ -10,14 +10,9 @@ from src.models.zones import Zones
 from src.models.activity import Activity
 from src.models.best_efforts import BestEfforts
 from src.models.streams import Streams
-from src.models.health import AppleHealth
-from src.config import (
-    ENABLE_APPLE_HEALTH_DATA,
-    PATH_TO_APPLE_HEALTH_DATA,
-)
+
 from src.utils.logging import (
     log_new_activity_details,
-    log_apple_health_data_toggle,
     log_new_activities_count,
     log_new_gear,
 )
@@ -26,7 +21,6 @@ from src.utils.logging import (
 def main():
     # Retrieves activities
     activities_data = strava_client.get_activities()
-
 
     # If no new activites are found
     if not activities_data:
@@ -43,7 +37,6 @@ def main():
         return
 
     try:
-        """ACTIVITY DATA"""
         # Process and filter activities
         logger.info("Processing activity data...")
         activities_df = Activity.process_activity_data(activities_df)
@@ -72,22 +65,6 @@ def main():
 
     finally:
         db_manager.check_strava_database_discrepancies()
-
-    """ APPLE HEALTH DATA 
-    # Health data processing
-    if not ENABLE_APPLE_HEALTH_DATA:
-        log_apple_health_data_toggle()
-        return
-    try:
-        # Process Apple Health data if enabled
-        log_apple_health_data_toggle()
-        process_apple_health_data()
-    except Exception as e:
-        logger.error(f"Error processing Apple Health data: {e}")
-
-    finally:
-        if ENABLE_APPLE_HEALTH_DATA:
-            db_manager.check_health_database_discrepancies()"""
 
 
 def process_gear_data(df: pd.DataFrame) -> None:
@@ -145,90 +122,10 @@ def process_individual_activity(activity_id: int, detailed_activity):
         logger.error(f"Error in processing individual activity {activity_id}: {e}")
 
 
-def process_apple_health_data():
-    """Handles the Apple Health data processing."""
-    health_df = AppleHealth.from_csv(PATH_TO_APPLE_HEALTH_DATA)
-    # logger.debug(f"Original HEALTH DF shape: {health_df.shape}")
-
-    # Crop df
-    # logger.debug(f"Cropped HEALTH DF shape: {health_df.shape}")
-
-    # Unique dates in the new DF
-    # log_info(f"Unique dates in the new DF: {len(health_df['date'].unique())}")
-
-    # Unique dates in the DB
-    dates = db_manager.get_dates_from_health()
-    # log_info(f"Unique dates in the DB: {len(dates)}")
-
-    # Dates in the dataframe that are not in the DB
-    # logger.debug(f"Dates in the dataframe that are not in the DB: {health_df[~health_df['date'].isin(dates)]['date'].unique()}")
-
-    # Filter the dataframe to only include new health data
-    new_health_data = health_df[~health_df["date"].isin(dates)]
-    # logger.debug(f"Number of new dates: {len(new_health_data['date'].tolist())}")
-
-    # Insert health data into the database
-    if len(new_health_data) == 0:
-        logger.info("No new health data.")
-    else:
-        logger.debug(f"Inserting {len(new_health_data)} new rows into Database...")
-        db_manager.insert_dataframe_to_db(df=new_health_data, table_name="health")
-
 
 if __name__ == "__main__":
-    # logger.error("MOVE ALL ERROR HANDLING TO SEPARATE FILE")
-
     strava_client = StravaClient(**get_strava_api_config())
-
     db_manager = DatabaseManager()
-    # db_manager.drop_table("activities")
     db_manager.create_all_tables()
-    # db_manager.delete_last_activity()
-    # df = db_manager.get_table_as_dataframe("activities")
-
-    # run_df = df[df["sport_type"] == "Run"]
-
-    
-
 
     main()
-
-    def log_database_summary():
-        logger.info("Make something here to log a summary of all records in database")
-        logger.info("Log project info in general")
-
-    # Filtering Operations
-    # from rich import Console
-    # from rich import Table
-    # console = Console()
-    
-
-
-
-    # def print_dataframe(df: pd.DataFrame, title: str = "DataFrame", highlight_columns=None):
-    #     """Prints a Pandas DataFrame as a styled Rich table.
-        
-    #     Args:
-    #         df (pd.DataFrame): The DataFrame to print.
-    #         title (str): Table title.
-    #         highlight_columns (list): Columns to highlight in bold.
-    #     """
-    #     if df.empty:
-    #         console.print(f"[bold red]{title} is empty![/bold red]")
-    #         return
-
-    #     table = Table(title=title)
-
-    #     # Highlight specific columns if provided
-    #     highlight_columns = set(highlight_columns or [])
-
-    #     # Add column headers
-    #     for col in df.columns:
-    #         style = "bold yellow" if col in highlight_columns else "cyan"
-    #         table.add_column(str(col), justify="right", style=style)
-
-    #     # Add rows
-    #     for _, row in df.iterrows():
-    #         table.add_row(*map(str, row))
-
-    #     console.print(table)
